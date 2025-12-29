@@ -18,13 +18,17 @@ services:
   # --- Frontend Service ---
   client:
     # Look for a Dockerfile in the ./client directory to build the image
-    build: ./client
+    build:
+      context: ./client
+      args:
+        # Pass the server IP here
+        - VITE_API_URL=http://3.110.224.177:4000
     # Custom name for the running container
     container_name: react-client
 
     environment:
       - VITE_API_URL=http://3.110.224.177:4000 # Use your actual Server IP
-      
+
     # Connect this container to the internal network
     networks:
       - fullstask-net

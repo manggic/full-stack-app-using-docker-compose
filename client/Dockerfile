@@ -5,6 +5,10 @@ FROM node:22-alpine AS builder
 # Set the folder inside the container where commands will run
 WORKDIR /app
 
+# 1. Add these lines to accept the build-time argument
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+
 # Copy package files first to leverage Docker's "layer caching"
 # (This makes subsequent builds faster if you haven't changed dependencies)
 COPY package*.json ./

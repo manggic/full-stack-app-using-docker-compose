@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 
 import "./App.css";
 
-// const apiURL = `${import.meta.env.VITE_API_URL}/api/message`
-const apiURL = `http://3.110.224.177:4000/api/message`
+const apiURL = `${import.meta.env.VITE_API_URL}/api/message`
+// const apiURL = `http://3.110.224.177:4000/api/message`
 
 
 console.log({apiURL});
