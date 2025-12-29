@@ -1,24 +1,43 @@
+# Specifies the version of the Docker Compose file format
 version: "3.9"
 
 services:
+  # --- Backend Service ---
   server:
+    # Custom name for the running container
     container_name: express-server
+    # Look for a Dockerfile in the ./server directory to build the image
     build: ./server
+    # Map the host's port 4000 to the container's port 4000
     ports:
       - "4000:4000"
+    # Connect this container to the internal network
     networks:
       - fullstask-net
 
+  # --- Frontend Service ---
   client:
+    # Look for a Dockerfile in the ./client directory to build the image
     build: ./client
+    # Custom name for the running container
     container_name: react-client
+
+    environment:
+      - VITE_API_URL=http://3.110.224.177:4000 # Use your actual Server IP
+      
+    # Connect this container to the internal network
     networks:
       - fullstask-net
+    # Map the host's port 8080 to the container's port 80 (standard HTTP port)
     ports:
       - "8080:80"
+    # Ensures the server starts before the client container is launched
     depends_on:
       - server
 
+# --- Network Configuration ---
 networks:
+  # Define a custom bridge network for inter-container communication
   fullstask-net:
+    # Use the bridge driver, which is the standard for standalone containers
     driver: "bridge"
