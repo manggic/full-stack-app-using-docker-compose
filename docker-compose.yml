@@ -26,9 +26,6 @@ services:
     # Custom name for the running container
     container_name: react-client
 
-    environment:
-      - VITE_API_URL=http://3.110.224.177:4000 # Use your actual Server IP
-
     # Connect this container to the internal network
     networks:
       - fullstask-net
