@@ -1,0 +1,23 @@
+name: Deploy to AWS
+on:
+  push:
+    branches:
+      - main # This runs every time you push code to the 'main' branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Execute remote commands via SSH
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/ubuntu/full-stack-app  # <--- Make sure this is your folder name!
+            git pull origin main
+            sudo docker compose up -d --build
