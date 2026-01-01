@@ -1,8 +1,9 @@
+
 ---
 
 # 🚀 Full-Stack Secure Docker Deployment
 
-This document explains how our application is built, secured with **SSL (HTTPS)**, and managed on the AWS server using **Docker** and **Nginx**.
+This document explains how our application is built, secured with **SSL (HTTPS)**, and managed on the AWS server using **Docker**, **Nginx**, and **GitHub Actions**.
 
 ---
 
@@ -28,55 +29,71 @@ Our app uses a **Reverse Proxy** design. Instead of users talking to our React o
 
 ---
 
+## 🤖 CI/CD Pipeline (The Robot Assistant)
+
+We use **GitHub Actions** to automate our deployment. This means every time you "Push" code to GitHub, a "Robot" updates your AWS server for you.
+
+### How the Automation Works:
+
+1. **Trigger**: You push code to the `main` branch on GitHub.
+2. **Login**: The robot uses a secret **SSH Key** (stored in GitHub Secrets) to log into your AWS server.
+3. **Update**: The robot runs these commands on your server:
+* `git pull`: Downloads the newest code.
+* `docker compose up --build`: Rebuilds the boxes with the new changes.
+
+
+
+---
+
 ## 🛡️ The Security Layer (Nginx & SSL)
 
 We added a third service called `nginx-proxy`. This is our **Security Guard**.
 
 ### What Nginx is doing:
 
-1. **SSL Handling**: It holds the **Let's Encrypt** certificates (the "keys"). It turns the red "Not Secure" warning into a **Green Padlock**.
+1. **SSL Handling**: It holds the **Let's Encrypt** certificates. It turns the red "Not Secure" warning into a **Green Padlock**.
 2. **Traffic Direction**:
 * If a user visits `docker.devder.site`, Nginx sends them to the **React Client**.
 * If the app asks for `/api`, Nginx sends that request to the **Express Server**.
 
 
-3. **The Automatic Redirect**: If someone tries to visit the old `http` (Port 80), Nginx automatically pushes them to the secure `https` (Port 443).
-
-### The Magic Tunnels (Volumes):
-
-In the `docker-compose.yml`, we built two tunnels:
-
-* **Keys Tunnel**: Links the server's secret keys folder (`/etc/letsencrypt`) to Nginx.
-* **Rules Tunnel**: Links our `nginx.conf` file to Nginx so it knows the "Rules of the House."
 
 ---
 
 ## 🚦 How to Run the Project
 
-### 1. Prepare the Secret Note (`.env`)
+### 1. Set up GitHub Secrets
+
+Before the "Robot" can work, you must add these to **GitHub Settings > Secrets > Actions**:
+
+* `EC2_SSH_KEY`: The text inside your `.pem` file.
+* `HOST`: Your AWS Public IP.
+* `USERNAME`: `ubuntu`.
+
+### 2. Prepare the Server
 
 On the AWS server, create a `.env` file in the root folder:
 
 ```bash
-echo "AWS_PUBLIC_IP=13.233.255.52" > .env
+echo "AWS_PUBLIC_IP=your_ip_here" > .env
 
 ```
 
-### 2. Get the SSL Keys (One-time setup)
-
-We use **Certbot** in "Standalone" mode to talk to the internet and get our certificates:
+### 3. Get the SSL Keys (One-time setup)
 
 ```bash
 sudo certbot certonly --standalone -d docker.devder.site
 
 ```
 
-### 3. Start the Whole Team
+### 4. Deploy
 
-Run this command to build the boxes and start the guard:
+Just push your code!
 
 ```bash
-sudo docker compose up -d --build
+git add .
+git commit -m "Deploying my app"
+git push origin main
 
 ```
 
@@ -85,11 +102,10 @@ sudo docker compose up -d --build
 ## 🔄 The Flow of a Request
 
 1. **User** types `https://docker.devder.site`.
-2. **AWS Security Group** allows the person in through Port 443.
-3. **Nginx** greets them, shows the SSL Certificate, and checks the `nginx.conf`.
-4. **Nginx** sees they want the homepage and passes the request to the **React Container** inside the private `fullstask-net`.
-5. **React** sends a message to `https://docker.devder.site/api`.
-6. **Nginx** sees the `/api` part and passes it to the **Express Container**.
+2. **Nginx** greets them, shows the SSL Certificate (Port 443).
+3. **Nginx** sees they want the homepage and passes the request to the **React Container**.
+4. **React** sends a message to `/api`.
+5. **Nginx** sees the `/api` part and passes it to the **Express Container**.
 
 ---
 
@@ -100,7 +116,6 @@ sudo docker compose up -d --build
 | **Nginx** | Security Guard (SSL & Routing) | 80, 443 |
 | **React** | The Visual Interface (Website) | 8080 |
 | **Express** | The Data Brain (API) | 4000 |
-| **Certbot** | The Key Maker (SSL Certificates) | N/A |
+| **GitHub Actions** | The Deployment Robot | N/A |
 
 ---
-
