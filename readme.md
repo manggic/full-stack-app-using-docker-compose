@@ -1,78 +1,106 @@
+---
 
-# Full-Stack Docker Deployment Documentation
+# 🚀 Full-Stack Secure Docker Deployment
 
-## 🚀 The Deployment Lifecycle
-
-This document outlines the step-by-step process of how our application was built, orchestrated, and executed on the AWS Ubuntu server.
+This document explains how our application is built, secured with **SSL (HTTPS)**, and managed on the AWS server using **Docker** and **Nginx**.
 
 ---
 
-## Step 1: The "Launch" Command
+## 🏗️ The Architecture (The Big Picture)
 
-The deployment started with the following command:
-`sudo docker compose up -d --build`
-
-* **`--build`**: Instructs Docker to ignore old images and create fresh ones. This ensures code changes (like the updated API URL) are included.
-* **`-d` (Detached)**: Runs the containers in the background. This allows the application to stay online even after the SSH session is closed.
+Our app uses a **Reverse Proxy** design. Instead of users talking to our React or Express apps directly, they talk to **Nginx**, which acts as a secure front gate.
 
 ---
 
-## Step 2: Building the Backend (Server)
+## 🛠️ How the Dockerfiles Work
 
-Docker follows the instructions in the `server/Dockerfile` to create the API image:
+### 1. The Server (Backend)
 
-1. **Base Layer**: Pulls `node:22-alpine` to provide a lightweight Linux OS with Node.js pre-installed.
-2. **Dependencies**: Runs `npm install` inside the container to build the node_modules folder.
-3. **Code Injection**: Copies the Express.js source code into the image.
-4. **Final Result**: A standalone image capable of running the API on **Port 4000**.
+* **Instruction**: `server/Dockerfile`
+* **What it does**: Creates a box containing Node.js 22. It installs your libraries and starts the Express engine.
+* **Internal Port**: It listens on **4000**.
 
----
+### 2. The Client (Frontend) - "The Multi-Stage Bake"
 
-## Step 3: Building the Frontend (The "Bake")
-
-The `client/Dockerfile` uses a **Multi-stage Build** to optimize size and security:
-
-1. **Preparation**: In the `builder` stage, Docker receives `VITE_API_URL` from the docker Compose `args`.
-2. **The Injection**: The variable is set as an `ENV`. During `RUN npm run build`, **Vite** searches the React code and physically replaces `import.meta.env.VITE_API_URL` with `http://your-ip:4000`.
-3. **The Cleanup**: Docker discards the heavy Node.js environment and copies **only** the static `/dist` folder into a lightweight **Nginx** image.
+* **Instruction**: `client/Dockerfile`
+* **Stage 1 (Builder)**: Takes the React code and the **HTTPS URL** (`VITE_API_URL`). It "bakes" that URL directly into the JavaScript code.
+* **Stage 2 (Production)**: Throws away the heavy build tools and puts only the tiny "baked" files into a high-speed Nginx web server.
 
 ---
 
-## Step 4: Orchestration (The Setup)
+## 🛡️ The Security Layer (Nginx & SSL)
 
-Docker Compose acts as the "Manager" to coordinate the containers:
+We added a third service called `nginx-proxy`. This is our **Security Guard**.
 
-* **Networking**: Creates `fullstask-net`, a private virtual bridge allowing containers to communicate.
-* **Service Sequencing**:
-* Starts `express-server` first.
-* Starts `react-client` only after the server is ready (via `depends_on`).
+### What Nginx is doing:
 
-
-* **Port Mapping**: Opens "tunnels" from the AWS Public IP to the containers:
-* **Port 8080** → Maps to Client Container (Port 80).
-* **Port 4000** → Maps to Server Container (Port 4000).
+1. **SSL Handling**: It holds the **Let's Encrypt** certificates (the "keys"). It turns the red "Not Secure" warning into a **Green Padlock**.
+2. **Traffic Direction**:
+* If a user visits `docker.devder.site`, Nginx sends them to the **React Client**.
+* If the app asks for `/api`, Nginx sends that request to the **Express Server**.
 
 
+3. **The Automatic Redirect**: If someone tries to visit the old `http` (Port 80), Nginx automatically pushes them to the secure `https` (Port 443).
 
----
+### The Magic Tunnels (Volumes):
 
-## Step 5: Runtime Execution
+In the `docker-compose.yml`, we built two tunnels:
 
-Once the system is live, the data flow follows this path:
-
-1. **Client Load**: The user visits `http://your-ip:8080`. Nginx serves the "baked" `index.js` to the user's browser.
-2. **Browser Execution**: The user's browser (not the server) executes the React code.
-3. **The API Call**: React sees the hardcoded URL `http://your-ip:4000` and sends a request from the **user's computer** to the AWS server.
-4. **Backend Response**: The Express server processes the request and returns JSON data to the user.
+* **Keys Tunnel**: Links the server's secret keys folder (`/etc/letsencrypt`) to Nginx.
+* **Rules Tunnel**: Links our `nginx.conf` file to Nginx so it knows the "Rules of the House."
 
 ---
 
-## Summary of Benefits
+## 🚦 How to Run the Project
 
-| Feature | Benefit |
-| --- | --- |
-| **Portability** | The app runs identically on AWS, Azure, or local machines. |
-| **Security** | Source code is hidden; users only interact with compiled assets. |
-| **Efficiency** | The frontend container is ~50MB (Alpine + Nginx), saving server resources. |
+### 1. Prepare the Secret Note (`.env`)
+
+On the AWS server, create a `.env` file in the root folder:
+
+```bash
+echo "AWS_PUBLIC_IP=13.233.255.52" > .env
+
+```
+
+### 2. Get the SSL Keys (One-time setup)
+
+We use **Certbot** in "Standalone" mode to talk to the internet and get our certificates:
+
+```bash
+sudo certbot certonly --standalone -d docker.devder.site
+
+```
+
+### 3. Start the Whole Team
+
+Run this command to build the boxes and start the guard:
+
+```bash
+sudo docker compose up -d --build
+
+```
 
 ---
+
+## 🔄 The Flow of a Request
+
+1. **User** types `https://docker.devder.site`.
+2. **AWS Security Group** allows the person in through Port 443.
+3. **Nginx** greets them, shows the SSL Certificate, and checks the `nginx.conf`.
+4. **Nginx** sees they want the homepage and passes the request to the **React Container** inside the private `fullstask-net`.
+5. **React** sends a message to `https://docker.devder.site/api`.
+6. **Nginx** sees the `/api` part and passes it to the **Express Container**.
+
+---
+
+## 📊 Summary of the Setup
+
+| Part | Role | Port |
+| --- | --- | --- |
+| **Nginx** | Security Guard (SSL & Routing) | 80, 443 |
+| **React** | The Visual Interface (Website) | 8080 |
+| **Express** | The Data Brain (API) | 4000 |
+| **Certbot** | The Key Maker (SSL Certificates) | N/A |
+
+---
+
