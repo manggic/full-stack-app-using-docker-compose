@@ -10,7 +10,7 @@ This document outlines the step-by-step process of how our application was built
 ## Step 1: The "Launch" Command
 
 The deployment started with the following command:
-`sudo docker-compose up -d --build`
+`sudo docker compose up -d --build`
 
 * **`--build`**: Instructs Docker to ignore old images and create fresh ones. This ensures code changes (like the updated API URL) are included.
 * **`-d` (Detached)**: Runs the containers in the background. This allows the application to stay online even after the SSH session is closed.
