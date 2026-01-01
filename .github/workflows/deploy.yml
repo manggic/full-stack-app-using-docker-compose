@@ -21,7 +21,9 @@ jobs:
           script: |
             cd /home/ubuntu/full-stack-app
             git pull origin main
-            # This cleans up old, hidden Docker pieces to save space
-            sudo docker system prune -f 
-            # This builds your new code into fresh containers
+            # Force stop everything first
+            sudo docker compose down
+            # Delete old image layers to force a fresh "bake"
+            sudo docker system prune -af
+            # Start fresh
             sudo docker compose up -d --build
