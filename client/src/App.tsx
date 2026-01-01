@@ -20,7 +20,7 @@ function App() {
   });
   return (
     <>
-      <h1>Welcome to chai aur code</h1>
+      <h1>Welcome to App - docker compose + SSL certificate (nginx) + CI/CD pipeline ( github action ) </h1>
       <p>{`message : ${message}`}</p>
     </>
   );
