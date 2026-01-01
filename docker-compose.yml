@@ -8,6 +8,8 @@ services:
     container_name: express-server
     # Look for a Dockerfile in the ./server directory to build the image
     build: ./server
+    # Restart the container automatically if it crashes or the server reboots
+    restart: always
     # Map the host's port 4000 to the container's port 4000
     ports:
       - "4000:4000"
@@ -21,11 +23,12 @@ services:
     build:
       context: ./client
       args:
-        # Pass the server IP here
-        - VITE_API_URL=http://13.233.255.52:4000
+        # Pass the server IP here - now using a variable from the .env file
+        - VITE_API_URL=http://${AWS_PUBLIC_IP}:4000
     # Custom name for the running container
     container_name: react-client
-
+    # Restart the container automatically if it crashes or the server reboots
+    restart: always
     # Connect this container to the internal network
     networks:
       - fullstask-net
