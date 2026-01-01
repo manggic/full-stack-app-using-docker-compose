@@ -20,7 +20,8 @@ function App() {
   });
   return (
     <>
-      <h1>Welcome to App - docker compose + SSL certificate (nginx) + CI/CD pipeline ( github action ) </h1>
+      <h1>Welcome to App </h1>
+      <h2>docker compose + SSL certificate (nginx) + CI/CD pipeline ( github action ) </h2>
       <p>{`message : ${message}`}</p>
     </>
   );
